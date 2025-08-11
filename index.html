@@ -2,133 +2,448 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>やりたいこと＆休日プラン進捗トラッカー</title>
-
-<!-- PWA関連 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>YNライフダッシュボード｜進捗・支出・配当・旅行・ルーティン</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0f1115">
 <link rel="apple-touch-icon" href="icon-192.png">
-
 <style>
-  body {
-    background: #0f1115;
-    color: white;
-    font-family: sans-serif;
-    max-width: 600px;
-    margin: auto;
-    padding: 20px;
-  }
-  h1 { font-size: 1.4rem; }
-  .goal {
-    background: #1e1f26;
-    margin: 10px 0;
-    padding: 10px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  input[type="checkbox"] { transform: scale(1.2); }
-  button {
-    background: #333;
-    color: white;
-    padding: 8px 14px;
-    border: none;
-    border-radius: 6px;
-    margin-top: 10px;
-  }
+:root{--bg:#0f1115;--card:#171923;--text:#e8eaf0;--muted:#9aa3b2;--border:#2b3140;--accent:#4da3ff;--accent2:#7ef0c4}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP","Helvetica Neue",Arial}
+.wrap{max-width:920px;margin:0 auto;padding:16px 16px 100px}
+h1{font-size:20px;margin:6px 0 12px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input,select,textarea{flex:1;min-width:0;padding:10px;border-radius:10px;border:1px solid var(--border);background:#0b0d12;color:var(--text);font-size:15px}
+button{appearance:none;border:none;border-radius:10px;padding:10px 12px;background:#1f2430;border:1px solid var(--border);color:var(--text);font-size:15px}
+button.primary{background:var(--accent);border:none;color:#0a0d12;font-weight:700}
+.section{margin:14px 0;padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card)}
+.small{color:var(--muted);font-size:12px}
+.tabs{position:sticky;top:0;z-index:10;background:linear-gradient(to bottom,rgba(15,17,21,.98),rgba(15,17,21,.85) 60%,transparent);backdrop-filter:blur(8px);padding:6px 0 8px;border-bottom:1px solid var(--border)}
+.tabbar{display:flex;gap:8px;flex-wrap:wrap}
+.tabbar button{background:#131722;border:1px solid var(--border)}
+.tabbar button.active{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#0a0d12;font-weight:800}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+.card{border:1px solid var(--border);border-radius:12px;padding:10px;background:rgba(255,255,255,.02)}
+.progress{display:flex;align-items:center;gap:10px;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin:8px 0 14px}
+.bar{flex:1;height:10px;background:#0b0d12;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+.pct{min-width:56px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px dashed var(--border);background:rgba(255,255,255,.02);padding:10px;border-radius:10px}
+.badge{font-size:12px;color:#cbd5e1;background:#0b0d12;border:1px solid var(--border);border-radius:999px;padding:3px 8px}
+.sum{display:flex;gap:10px;flex-wrap:wrap}
+.sum .pill{background:#0b0d12;border:1px solid var(--border);border-radius:999px;padding:6px 10px;color:#fff;font-size:12px}
+.footer{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(15,17,21,.96),rgba(15,17,21,.7));backdrop-filter:blur(8px);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap}
+.footer button{flex:1}
+.hidden{display:none}
+hr{border:none;border-top:1px solid var(--border);margin:10px 0}
 </style>
 </head>
 <body>
-<h1>やりたいこと＆休日プラン | 進捗トラッカー</h1>
-<div id="progress">0%</div>
+<div class="wrap">
+  <div class="tabs">
+    <h1>YNライフダッシュボード</h1>
+    <div class="tabbar">
+      <button class="active" data-tab="goals">進捗</button>
+      <button data-tab="expense">支出</button>
+      <button data-tab="dividend">配当</button>
+      <button data-tab="travel">旅行</button>
+      <button data-tab="routine">ルーティン</button>
+      <button data-tab="backup">バックアップ</button>
+    </div>
+  </div>
 
-<div id="goals"></div>
+  <!-- 進捗 -->
+  <div id="tab-goals">
+    <div class="progress"><div class="bar"><div id="progressBar"></div></div><div class="pct"><span id="progressPct">0</span>%</div></div>
+    <div class="section">
+      <div class="small">チェックは自動保存。完了が進捗率に反映されます。</div>
+      <div class="list" id="goalsList"></div>
+      <hr>
+      <div class="row">
+        <select id="newPeriod">
+          <option>短期</option><option>中期</option><option>長期</option>
+        </select>
+        <input id="newGoal" placeholder="例：毎月1回の国内旅行を継続">
+        <button class="primary" id="addGoal">追加</button>
+      </div>
+    </div>
+  </div>
 
-<button id="markAll">全て未完に戻す</button>
-<button id="shareText">進捗をメモに共有</button>
+  <!-- 支出 -->
+  <div id="tab-expense" class="hidden">
+    <div class="section">
+      <div class="row">
+        <input id="exDate" type="date">
+        <select id="exCat">
+          <option>食費</option><option>交通</option><option>遊び</option><option>旅行</option><option>カード</option><option>その他</option>
+        </select>
+        <input id="exAmt" type="number" inputmode="decimal" placeholder="金額(円)">
+      </div>
+      <div class="row">
+        <input id="exMemo" placeholder="メモ（任意）">
+        <button class="primary" id="exAdd">追加</button>
+      </div>
+      <div class="sum" id="exSummary"></div>
+      <div class="list" id="exList"></div>
+    </div>
+  </div>
+
+  <!-- 配当 -->
+  <div id="tab-dividend" class="hidden">
+    <div class="section">
+      <div class="grid">
+        <div class="card"><div class="small">年間目標（円）</div><input id="dvGoal" type="number" inputmode="decimal" placeholder="例：120000"></div>
+        <div class="card"><div class="small">想定利回り（%）</div><input id="dvYield" type="number" inputmode="decimal" placeholder="例：4.0"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <input id="dvDate" type="month">
+        <input id="dvAmt" type="number" inputmode="decimal" placeholder="入金額（円）">
+        <button class="primary" id="dvAdd">記録</button>
+      </div>
+      <div class="sum" id="dvSummary"></div>
+      <div class="list" id="dvList"></div>
+    </div>
+  </div>
+
+  <!-- 旅行 -->
+  <div id="tab-travel" class="hidden">
+    <div class="section">
+      <div class="row">
+        <input id="trMonth" type="month">
+        <input id="trPlace" placeholder="行き先">
+      </div>
+      <div class="row" style="margin-top:6px">
+        <input id="trPurpose" placeholder="目的">
+        <input id="trBudget" type="number" inputmode="decimal" placeholder="予算（円）">
+        <button class="primary" id="trAdd">追加</button>
+      </div>
+      <div class="list" id="trList"></div>
+    </div>
+  </div>
+
+  <!-- ルーティン -->
+  <div id="tab-routine" class="hidden">
+    <div class="section">
+      <div class="small">今日のルーティンにチェック。週次サマリーを自動生成。</div>
+      <div class="list" id="rtList"></div>
+      <hr>
+      <div class="row">
+        <input id="rtNew" placeholder="ルーティン項目（例：筋トレ30分）">
+        <button class="primary" id="rtAdd">追加</button>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="small">週次サマリー</div>
+        <div id="rtSummary" class="small"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- バックアップ -->
+  <div id="tab-backup" class="hidden">
+    <div class="section">
+      <div class="row">
+        <button id="exportBtn" class="primary">バックアップ書き出し</button>
+        <input id="importInput" type="file" accept=".json" style="display:none">
+        <button id="importBtn">バックアップ読み込み</button>
+      </div>
+      <div class="small">端末変更時も復元OK。JSONを保存しておくと安心です。</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <button id="resetAll">全データ初期化</button>
+  <button id="shareProgress">進捗を共有</button>
+</div>
 
 <script>
-const state = {
-  goals: [
-    { text: "毎月1回の国内旅行を継続（まずは近場から）", done: false },
-    { text: "高配当株ポートフォリオを35銘柄体制にする", done: false },
-    { text: "デュエマの副業トライアル（月5,000円以上の利益目標）", done: false },
-    { text: "腹筋がしっかり見える体型にする（体脂肪率12〜14％目安）", done: false }
-  ]
-};
+(() => {
+  const KEY = "yn_dashboard_v1";
+  const todayStr = () => new Date().toISOString().slice(0,10);
+  const monthStr = () => new Date().toISOString().slice(0,7);
 
-function saveState() {
-  localStorage.setItem("yn-tracker", JSON.stringify(state));
-}
+  const state = load() || {
+    goals: [
+      {text:"毎月1回の国内旅行を継続（まずは近場から）",period:"短期",done:false},
+      {text:"高配当株ポートフォリオを35銘柄体制にする",period:"短期",done:false},
+      {text:"デュエマの副業トライアル（月5,000円以上の利益目標）",period:"短期",done:false},
+      {text:"腹筋がしっかり見える体型にする（体脂肪率12〜14％目安）",period:"短期",done:false},
+      {text:"資産1,000万円達成（30歳まで）",period:"中期",done:false},
+      {text:"月配当3万円を達成",period:"中期",done:false},
+      {text:"日本全国47都道府県制覇",period:"長期",done:false},
+    ],
+    expenses: [],
+    dividends: {goal:120000,yield:4.0,rows:[]},
+    travels: [],
+    routines: {items:["運動","読書","早寝"], ticks:{}},
+  };
 
-function loadState() {
-  const data = localStorage.getItem("yn-tracker");
-  if (data) {
-    Object.assign(state, JSON.parse(data));
-  }
-}
+  function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)); }catch(e){ return null; } }
 
-function renderAll() {
-  const container = document.getElementById("goals");
-  container.innerHTML = "";
-  state.goals.forEach((g, i) => {
-    const div = document.createElement("div");
-    div.className = "goal";
-    const label = document.createElement("label");
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = g.done;
-    checkbox.onchange = () => {
-      state.goals[i].done = checkbox.checked;
-      saveState();
-      updateProgress();
-    };
-    label.appendChild(checkbox);
-    label.appendChild(document.createTextNode(" " + g.text));
-    div.appendChild(label);
-    container.appendChild(div);
+  // Tabs
+  document.querySelectorAll(".tabbar button").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll(".tabbar button").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      const target = btn.getAttribute("data-tab");
+      document.querySelectorAll("[id^='tab-']").forEach(sec=>sec.classList.add("hidden"));
+      document.getElementById("tab-"+target).classList.remove("hidden");
+    });
   });
-  updateProgress();
-}
 
-function updateProgress() {
-  const doneCount = state.goals.filter(g => g.done).length;
-  const pct = Math.round((doneCount / state.goals.length) * 100);
-  document.getElementById("progress").textContent = `${pct}%`;
-}
-
-document.getElementById("markAll").onclick = () => {
-  if (confirm("すべて未完に戻しますか？")) {
-    state.goals.forEach(g => g.done = false);
-    saveState();
-    renderAll();
+  // Goals
+  const $goalsList = document.getElementById("goalsList");
+  function renderGoals(){
+    $goalsList.innerHTML="";
+    state.goals.forEach((g,i)=>{
+      const div=document.createElement("div");
+      div.className="item";
+      div.innerHTML=`
+        <label style="display:flex;gap:8px;align-items:center;flex:1">
+          <input type="checkbox" ${g.done?"checked":""} data-i="${i}">
+          <span>${escape(g.text)}</span>
+        </label>
+        <span class="badge">${g.period}</span>`;
+      let t; div.addEventListener("touchstart",()=>{ t=setTimeout(()=>{ if(confirm("削除しますか？")){ state.goals.splice(i,1); save(); renderGoals(); updateProgress(); } },650); });
+      div.addEventListener("touchend",()=>clearTimeout(t));
+      $goalsList.appendChild(div);
+    });
+    $goalsList.querySelectorAll("input[type=checkbox]").forEach(cb=>{
+      cb.addEventListener("change",e=>{
+        const i=+e.target.getAttribute("data-i");
+        state.goals[i].done=e.target.checked; save(); updateProgress();
+      });
+    });
   }
-};
+  document.getElementById("addGoal").addEventListener("click",()=>{
+    const text=document.getElementById("newGoal").value.trim();
+    const period=document.getElementById("newPeriod").value;
+    if(!text) return alert("内容を入力してください");
+    state.goals.push({text,period,done:false}); save(); document.getElementById("newGoal").value=""; renderGoals(); updateProgress();
+  });
+  function updateProgress(){
+    const total = state.goals.length + Math.max(state.travels.length,1);
+    const done = state.goals.filter(g=>g.done).length + state.travels.filter(t=>t.done).length;
+    const pct = Math.round((done/(total||1))*100);
+    document.getElementById("progressBar").style.width=pct+"%";
+    document.getElementById("progressPct").textContent=pct;
+  }
 
-document.getElementById("shareText").onclick = async () => {
-  const doneCount = state.goals.filter(g => g.done).length;
-  const pct = Math.round((doneCount / state.goals.length) * 100);
-  const text = `進捗率: ${pct}%\n目標: ${state.goals.length}件中${doneCount}件完了`;
-  try {
-    if (navigator.share) {
-      await navigator.share({ text });
-    } else {
-      await navigator.clipboard.writeText(text);
-      alert("クリップボードにコピーしました");
+  // Expense
+  const $exList = document.getElementById("exList");
+  function renderExpenses(){
+    $exList.innerHTML="";
+    const rows = [...state.expenses].sort((a,b)=> (b.date+a.id).localeCompare(a.date+b.id));
+    let month = monthStr();
+    const totalM = rows.filter(r=> (r.date||"").slice(0,7)===month).reduce((s,r)=>s+Number(r.amt||0),0);
+    const totalD = rows.filter(r=> r.date===todayStr()).reduce((s,r)=>s+Number(r.amt||0),0);
+    document.getElementById("exSummary").innerHTML = `
+      <span class="pill">今日：${fmt(totalD)} 円</span>
+      <span class="pill">今月：${fmt(totalM)} 円</span>
+      <span class="pill">件数：${rows.length} 件</span>`;
+    rows.forEach(r=>{
+      const div=document.createElement("div");
+      div.className="item";
+      div.innerHTML=`
+        <div style="flex:1">
+          <div><strong>${fmt(r.amt)}円</strong>｜${escape(r.cat)}｜<span class="small">${r.date}</span></div>
+          <div class="small">${escape(r.memo||"")}</div>
+        </div>
+        <button data-del="${r.id}">削除</button>`;
+      $exList.appendChild(div);
+    });
+    $exList.querySelectorAll("button[data-del]").forEach(b=>{
+      b.addEventListener("click",e=>{
+        const id=e.target.getAttribute("data-del");
+        const i=state.expenses.findIndex(x=>x.id==id);
+        if(i>=0){ state.expenses.splice(i,1); save(); renderExpenses(); }
+      });
+    });
+  }
+  document.getElementById("exAdd").addEventListener("click",()=>{
+    const r={
+      date: document.getElementById("exDate").value || todayStr(),
+      cat: document.getElementById("exCat").value,
+      amt: Number(document.getElementById("exAmt").value||0),
+      memo: document.getElementById("exMemo").value.trim(),
+      id: Date.now()+""
+    };
+    if(!r.amt) return alert("金額を入力してください");
+    state.expenses.push(r); save();
+    document.getElementById("exAmt").value=""; document.getElementById("exMemo").value="";
+    renderExpenses();
+  });
+
+  // Dividend
+  const $dvList = document.getElementById("dvList");
+  function renderDividend(){
+    document.getElementById("dvGoal").value = state.dividends.goal;
+    document.getElementById("dvYield").value = state.dividends.yield;
+    const sum = state.dividends.rows.reduce((s,r)=>s+Number(r.amt||0),0);
+    const progress = Math.min(100, Math.round(sum / Math.max(1, state.dividends.goal) * 100));
+    document.getElementById("dvSummary").innerHTML = `
+      <span class="pill">累計：${fmt(sum)} 円</span>
+      <span class="pill">目標：${fmt(state.dividends.goal)} 円</span>
+      <span class="pill">達成率：${progress}%</span>`;
+    $dvList.innerHTML="";
+    [...state.dividends.rows].sort((a,b)=> (a.month).localeCompare(b.month)).forEach(r=>{
+      const div=document.createElement("div");
+      div.className="item";
+      div.innerHTML=`<div style="flex:1"><strong>${r.month}</strong>｜${fmt(r.amt)}円</div><button data-del="${r.id}">削除</button>`;
+      $dvList.appendChild(div);
+    });
+    $dvList.querySelectorAll("button[data-del]").forEach(b=> b.addEventListener("click",e=>{
+      const id=e.target.getAttribute("data-del");
+      const i=state.dividends.rows.findIndex(x=>x.id==id);
+      if(i>=0){ state.dividends.rows.splice(i,1); save(); renderDividend(); }
+    }));
+  }
+  document.getElementById("dvAdd").addEventListener("click",()=>{
+    const m=document.getElementById("dvDate").value || monthStr();
+    const a=Number(document.getElementById("dvAmt").value||0);
+    if(!a) return alert("入金額を入力してください");
+    state.dividends.rows.push({month:m,amt:a,id:Date.now()+""}); save();
+    document.getElementById("dvAmt").value="";
+    renderDividend();
+  });
+  document.getElementById("dvGoal").addEventListener("change",e=>{ state.dividends.goal=Number(e.target.value||0); save(); renderDividend(); });
+  document.getElementById("dvYield").addEventListener("change",e=>{ state.dividends.yield=Number(e.target.value||0); save(); });
+
+  // Travel
+  const $trList = document.getElementById("trList");
+  function renderTravel(){
+    $trList.innerHTML="";
+    [...state.travels].sort((a,b)=> (a.month||"").localeCompare(b.month||"")).forEach((t,i)=>{
+      const div=document.createElement("div");
+      div.className="item";
+      div.innerHTML=`
+        <div style="flex:1">
+          <div><strong>${t.month||"未定"}</strong>｜${escape(t.place||"")}</div>
+          <div class="small">目的：${escape(t.purpose||"")}　予算：${t.budget?fmt(t.budget):"-"} 円</div>
+        </div>
+        <label class="small"><input type="checkbox" data-i="${i}" ${t.done?"checked":""}> 完了</label>
+        <button data-del="${t.id}">削除</button>`;
+      $trList.appendChild(div);
+    });
+    $trList.querySelectorAll("input[type=checkbox]").forEach(cb=> cb.addEventListener("change",e=>{
+      const i=+e.target.getAttribute("data-i");
+      state.travels[i].done=e.target.checked; save(); updateProgress();
+    }));
+    $trList.querySelectorAll("button[data-del]").forEach(b=> b.addEventListener("click",e=>{
+      const id=e.target.getAttribute("data-del");
+      const i=state.travels.findIndex(x=>x.id==id);
+      if(i>=0){ state.travels.splice(i,1); save(); renderTravel(); updateProgress(); }
+    }));
+  }
+  document.getElementById("trAdd").addEventListener("click",()=>{
+    const t={
+      month: document.getElementById("trMonth").value || monthStr(),
+      place: document.getElementById("trPlace").value.trim(),
+      purpose: document.getElementById("trPurpose").value.trim(),
+      budget: Number(document.getElementById("trBudget").value||0),
+      done:false, id: Date.now()+""
+    };
+    if(!t.place) return alert("行き先を入力してください");
+    state.travels.push(t); save();
+    document.getElementById("trPlace").value=""; document.getElementById("trPurpose").value=""; document.getElementById("trBudget").value="";
+    renderTravel(); updateProgress();
+  });
+
+  // Routine
+  const $rtList = document.getElementById("rtList");
+  function renderRoutine(){
+    $rtList.innerHTML="";
+    state.routines.items.forEach((name,idx)=>{
+      const div=document.createElement("div"); div.className="item";
+      const today=state.routines.ticks[todayStr()]||{};
+      const checked = !!today[idx];
+      div.innerHTML=`<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-i="${idx}" ${checked?"checked":""}><span>${escape(name)}</span></label><span class="badge">今日</span>`;
+      $rtList.appendChild(div);
+    });
+    $rtList.querySelectorAll("input[type=checkbox]").forEach(cb=> cb.addEventListener("change",e=>{
+      const i=+e.target.getAttribute("data-i");
+      const day=state.routines.ticks[todayStr()] || {};
+      day[i]=e.target.checked; state.routines.ticks[todayStr()]=day; save(); renderRtSummary();
+    }));
+    renderRtSummary();
+  }
+  function renderRtSummary(){
+    const box=document.getElementById("rtSummary");
+    const days=[...Array(7)].map((_,k)=>{ const d=new Date(); d.setDate(d.getDate()-k); return d.toISOString().slice(0,10); }).reverse();
+    const items=state.routines.items.length;
+    let total=0, max=days.length*items;
+    days.forEach(d=>{ const t=state.routines.ticks[d]||{}; total += Object.values(t).filter(Boolean).length; });
+    const pct = max? Math.round(total/max*100) : 0;
+    box.textContent = `直近7日：${total}/${max}（${pct}%）`;
+  }
+  document.getElementById("rtAdd").addEventListener("click",()=>{
+    const v=document.getElementById("rtNew").value.trim();
+    if(!v) return;
+    state.routines.items.push(v); document.getElementById("rtNew").value=""; save(); renderRoutine();
+  });
+
+  // Backup
+  document.getElementById("exportBtn").addEventListener("click",()=>{
+    const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="yn_dashboard_backup.json"; a.click(); URL.revokeObjectURL(a.href);
+  });
+  document.getElementById("importBtn").addEventListener("click",()=> document.getElementById("importInput").click());
+  document.getElementById("importInput").addEventListener("change",e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);
+        if(!data || !data.goals) throw new Error();
+        Object.assign(state,data); save(); initAll(); alert("読み込み完了");
+      }catch(_){ alert("読み込み失敗"); }
+    };
+    r.readAsText(f,"utf-8");
+  });
+
+  // Footer
+  document.getElementById("resetAll").addEventListener("click",()=>{
+    if(confirm("全データを初期化しますか？")){
+      localStorage.removeItem(KEY); location.reload();
     }
-  } catch (e) {}
-};
+  });
+  document.getElementById("shareProgress").addEventListener("click",async()=>{
+    const done = state.goals.filter(g=>g.done).length;
+    const total = state.goals.length;
+    const pct = Math.round(done/Math.max(1,total)*100);
+    const text = `進捗: ${pct}% / 目標 ${done}/${total}\n今月の支出: ${fmt(state.expenses.filter(r=> (r.date||"").slice(0,7)===monthStr()).reduce((s,r)=>s+Number(r.amt||0),0))}円`;
+    try{
+      if(navigator.share){ await navigator.share({text}); }
+      else{ await navigator.clipboard.writeText(text); alert("コピーしました"); }
+    }catch(e){}
+  });
 
-loadState();
-renderAll();
+  // Helpers
+  const escape = s => (s||"").replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const fmt = n => Number(n||0).toLocaleString();
+
+  function initAll(){
+    renderGoals(); updateProgress();
+    document.getElementById("exDate").value = todayStr();
+    renderExpenses();
+    renderDividend();
+    renderTravel();
+    renderRoutine();
+  }
+
+  document.addEventListener("DOMContentLoaded", initAll);
+  initAll();
+})();
 </script>
 
-<!-- Service Worker登録 -->
 <script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
+// PWA: Service Worker登録
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
     navigator.serviceWorker.register("./sw.js");
   });
 }

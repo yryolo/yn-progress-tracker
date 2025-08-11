@@ -1,6 +1,6 @@
 {
-  "name": "やりたいこと & 休日プラン｜進捗トラッカー",
-  "short_name": "進捗トラッカー",
+  "name": "YNライフダッシュボード",
+  "short_name": "ライフDB",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#0f1115",
