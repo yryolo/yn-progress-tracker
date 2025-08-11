@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>やりたいこと & 休日プラン｜進捗トラッカー</title>
+<style>
+  :root{--bg:#0f1115;--card:#171923;--text:#e6e6e6;--muted:#a7abb4;--accent:#4da3ff;--accent2:#7ef0c4;--border:#2a2f3a}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Hiragino Sans","Noto Sans JP",Arial}
+  .wrap{max-width:860px;margin:0 auto;padding:20px 16px 80px}
+  header{position:sticky;top:0;background:linear-gradient(to bottom,rgba(15,17,21,.95),rgba(15,17,21,.85) 70%,transparent);backdrop-filter:blur(8px);z-index:10}
+  .title{display:flex;align-items:center;gap:12px;padding:12px 4px}
+  .title h1{font-size:20px;margin:0}
+  .progress{display:flex;align-items:center;gap:10px;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin:8px 0 14px}
+  .bar{flex:1;height:10px;background:#0b0d12;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+  .bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+  .pct{min-width:56px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+  .section{margin:18px 0;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--card)}
+  .section h2{margin:0 0 6px;font-size:18px}
+  .hint{color:var(--muted);font-size:12px;margin:4px 0 10px}
+  .goal{display:flex;align-items:flex-start;gap:10px;padding:10px;border-radius:10px;border:1px dashed var(--border);margin:8px 0;background:rgba(255,255,255,.02)}
+  .goal input[type=checkbox]{transform:scale(1.2);margin-top:2px}
+  .periodTag{font-size:12px;color:#cbd5e1;background:#0b0d12;border:1px solid var(--border);border-radius:999px;padding:3px 8px;margin-left:auto}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  button,.btn{appearance:none;border:none;border-radius:10px;padding:10px 12px;background:#1f2430;border:1px solid var(--border);color:var(--text);font-size:15px}
+  button.primary{background:var(--accent);border-color:transparent;color:#0a0d12;font-weight:700}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  input,select,textarea{background:#0b0d12;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px;font-size:15px;flex:1;min-width:0}
+  .pill{display:inline-flex;gap:8px;background:#0b0d12;border:1px solid var(--border);padding:6px 8px;border-radius:999px;font-size:12px;color:var(--muted)}
+  .footer{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(15,17,21,.96),rgba(15,17,21,.7));backdrop-filter:blur(8px);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:8px}
+  .footer button{flex:1}
+  .tagWrap{display:flex;gap:8px;flex-wrap:wrap}
+  .empty{color:var(--muted);padding:10px 0}
+  .small{font-size:12px;color:var(--muted)}
+  .travelCard{border:1px solid var(--border);background:rgba(255,255,255,.02);border-radius:12px;padding:10px;margin-top:10px}
+  .del{background:#2a2f3a;color:#eee;border:1px solid var(--border)}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="title">
+    <h1>やりたいこと & 休日プラン｜進捗トラッカー</h1>
+    <span class="pill">iPhone対応・オフラインOK・自動保存</span>
+  </header>
+
+  <div class="progress" aria-label="達成率">
+    <div class="bar"><div id="progressBar"></div></div>
+    <div class="pct"><span id="progressPct">0</span>%</div>
+  </div>
+
+  <div class="section" id="goalsSection">
+    <h2>目標チェックリスト</h2>
+    <div class="hint">チェックは自動保存されます。完了したら進捗率に反映。</div>
+    <div class="tagWrap">
+      <button class="btn" data-filter="all">すべて</button>
+      <button class="btn" data-filter="短期">短期</button>
+      <button class="btn" data-filter="中期">中期</button>
+      <button class="btn" data-filter="長期">長期</button>
+      <button class="btn" id="exportBtn">バックアップ書き出し</button>
+      <input id="importInput" type="file" accept=".json" style="display:none">
+      <button class="btn" id="importBtn">バックアップ読み込み</button>
+    </div>
+    <div id="goalsList"></div>
+
+    <div class="section" style="margin-top:14px">
+      <h2>項目を追加</h2>
+      <div class="row">
+        <select id="newPeriod">
+          <option>短期（〜1年以内）</option>
+          <option>中期（〜5年）</option>
+          <option>長期（5年以上）</option>
+        </select>
+        <input id="newGoal" placeholder="例：毎月1回の国内旅行を継続">
+      </div>
+      <div class="controls">
+        <button class="primary" id="addGoalBtn">追加する</button>
+      </div>
+      <div class="small">※間違えた場合は長押しで削除できます。</div>
+    </div>
+  </div>
+
+  <div class="section" id="travelSection">
+    <h2>毎月の国内旅行プラン</h2>
+    <div class="hint">近場からコスパ重視で続ける。完了にチェックを入れると達成率にカウント。</div>
+
+    <div class="row">
+      <input id="tripMonth" type="month">
+      <input id="tripPlace" placeholder="行き先（例：鎌倉・江ノ島）">
+    </div>
+    <div class="row" style="margin-top:6px">
+      <input id="tripPurpose" placeholder="目的（例：寺社巡り＆海沿い散歩）">
+      <input id="tripBudget" type="number" inputmode="decimal" placeholder="予算（円）">
+    </div>
+    <div class="controls">
+      <button class="primary" id="addTripBtn">旅プランを追加</button>
+    </div>
+
+    <div id="tripList"></div>
+    <div class="empty" id="tripEmpty">まだ旅プランがありません。</div>
+  </div>
+
+  <div class="section">
+    <h2>ホーム画面に追加（擬似アプリ化）</h2>
+    <div class="hint">Safariでこのページを開き、共有ボタン → 「ホーム画面に追加」。以降はオフラインでもOK。</div>
+  </div>
+</div>
+
+<div class="footer">
+  <button id="markAll">全て未完に戻す</button>
+  <button id="shareText">進捗をメモに共有</button>
+</div>
+
+<script>
+(()=> {
+  const STORAGE_KEY = "yn_progress_v1";
+  const state = loadState() || getDefaultState();
+  const $goalsList = document.getElementById('goalsList');
+  const $tripList = document.getElementById('tripList');
+  const $tripEmpty = document.getElementById('tripEmpty');
+  const $progressBar = document.getElementById('progressBar');
+  const $progressPct = document.getElementById('progressPct');
+  let currentFilter = "all";
+
+  function getDefaultState(){
+    return {
+      goals: [
+        {period:"短期（〜1年以内）", text:"毎月1回の国内旅行を継続（まずは近場から）", done:false},
+        {period:"短期（〜1年以内）", text:"高配当株ポートフォリオを35銘柄体制にする", done:false},
+        {period:"短期（〜1年以内）", text:"デュエマの副業トライアル（月5,000円以上の利益目標）", done:false},
+        {period:"短期（〜1年以内）", text:"腹筋がしっかり見える体型にする（体脂肪率12〜14％目安）", done:false},
+        {period:"短期（〜1年以内）", text:"休日のルーティンを確立（午前運動＋午後趣味＋夜はインプット時間）", done:false},
+        {period:"中期（〜5年）", text:"資産1,000万円達成（30歳まで）", done:false},
+        {period:"中期（〜5年）", text:"月配当3万円を達成", done:false},
+        {period:"中期（〜5年）", text:"海外旅行（アジア圏）に年1回行く", done:false},
+        {period:"中期（〜5年）", text:"趣味のカードコレクションで全国のショップ巡り", done:false},
+        {period:"中期（〜5年）", text:"週2回は仕事終わりに趣味または運動の時間を確保", done:false},
+        {period:"長期（5年以上）", text:"月配当10万円＆労働時間を減らす", done:false},
+        {period:"長期（5年以上）", text:"日本全国47都道府県制覇", done:false},
+        {period:"長期（5年以上）", text:"ヨーロッパまたは南米旅行", done:false},
+        {period:"長期（5年以上）", text:"副業または事業で年間100万円以上の収入を得る", done:false},
+        {period:"長期（5年以上）", text:"好きなこと中心の働き方に切り替える", done:false}
+      ],
+      trips: []
+    }
+  }
+
+  function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  function loadState(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch(e){ return null; } }
+
+  function renderGoals(filter="all"){
+    $goalsList.innerHTML = "";
+    const list = state.goals.map((g,i)=>({...g, idx:i})).filter(g => filter==="all" || g.period.startsWith(filter));
+    if(list.length===0){ $goalsList.innerHTML = '<div class="empty">該当する項目がありません。</div>'; return; }
+    list.forEach(g => {
+      const el = document.createElement('div');
+      el.className="goal";
+      el.innerHTML = `
+        <input type="checkbox" ${g.done?"checked":""} data-idx="${g.idx}">
+        <div>${escapeHtml(g.text)}</div>
+        <span class="periodTag">${escapeHtml(g.period.split("（")[0])}</span>`;
+      let t;
+      el.addEventListener('touchstart', ()=>{ t=setTimeout(()=>{ if(confirm("この項目を削除しますか？")){ state.goals.splice(g.idx,1); saveState(); renderAll(); } },650); });
+      el.addEventListener('touchend', ()=>clearTimeout(t));
+      el.addEventListener('mousedown', e=>{ if(e.target.tagName==="INPUT")return; t=setTimeout(()=>{ if(confirm("この項目を削除しますか？")){ state.goals.splice(g.idx,1); saveState(); renderAll(); } },650); });
+      el.addEventListener('mouseup', ()=>clearTimeout(t));
+      $goalsList.appendChild(el);
+    });
+    $goalsList.querySelectorAll("input[type=checkbox]").forEach(cb=>{
+      cb.addEventListener('change', e=>{
+        const i=+e.target.getAttribute('data-idx');
+        state.goals[i].done=e.target.checked; saveState(); updateProgress();
+      });
+    });
+  }
+
+  function renderTrips(){
+    $tripList.innerHTML = "";
+    if(state.trips.length===0){ $tripEmpty.style.display="block"; return; }
+    $tripEmpty.style.display="none";
+    state.trips.sort((a,b)=>(a.month||"").localeCompare(b.month||"")).forEach((t,i)=>{
+      const card=document.createElement('div');
+      card.className="travelCard";
+      card.innerHTML=`
+        <div class="row" style="align-items:center;justify-content:space-between">
+          <div><strong>${t.month||"未定"}</strong>｜${escapeHtml(t.place||"")}</div>
+          <label class="small"><input type="checkbox" data-trip="${i}" ${t.done?"checked":""}> 完了</label>
+        </div>
+        <div class="small">目的：${escapeHtml(t.purpose||"")}</div>
+        <div class="small">予算：${t.budget? Number(t.budget).toLocaleString():"-"} 円</div>
+        <div class="controls"><button class="del" data-del="${i}">削除</button></div>`;
+      $tripList.appendChild(card);
+    });
+    $tripList.querySelectorAll("input[type=checkbox]").forEach(cb=>{
+      cb.addEventListener('change', e=>{
+        const i=+e.target.getAttribute('data-trip');
+        state.trips[i].done=e.target.checked; saveState(); updateProgress();
+      });
+    });
+    $tripList.querySelectorAll("button.del").forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        const i=+e.target.getAttribute('data-del');
+        if(confirm("旅プランを削除しますか？")){ state.trips.splice(i,1); saveState(); renderTrips(); updateProgress(); }
+      });
+    });
+  }
+
+  function updateProgress(){
+    const goalsTotal=state.goals.length, goalsDone=state.goals.filter(g=>g.done).length;
+    const tripsTotal=state.trips.length, tripsDone=state.trips.filter(t=>t.done).length;
+    const total = goalsTotal + Math.max(tripsTotal,1);
+    const done = goalsDone + tripsDone;
+    const pct = Math.round((done/(total||1))*100);
+    document.getElementById('progressBar').style.width=pct+"%";
+    document.getElementById('progressPct').textContent=pct;
+  }
+
+  function escapeHtml(s){ return (s||"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  document.getElementById('addGoalBtn').addEventListener('click', ()=>{
+    const period=document.getElementById('newPeriod').value;
+    const text=document.getElementById('newGoal').value.trim();
+    if(!text){ alert("内容を入力してください"); return; }
+    state.goals.push({period,text,done:false});
+    document.getElementById('newGoal').value="";
+    saveState(); renderGoals(currentFilter); updateProgress();
+  });
+
+  document.querySelectorAll('[data-filter]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      currentFilter=btn.getAttribute('data-filter'); renderGoals(currentFilter);
+    });
+  });
+
+  document.getElementById('addTripBtn').addEventListener('click', ()=>{
+    const month=document.getElementById('tripMonth').value;
+    const place=document.getElementById('tripPlace').value.trim();
+    const purpose=document.getElementById('tripPurpose').value.trim();
+    const budget=document.getElementById('tripBudget').value;
+    if(!month||!place){ alert("月と行き先は必須です"); return; }
+    state.trips.push({month,place,purpose,budget,done:false});
+    saveState();
+    document.getElementById('tripPlace').value="";
+    document.getElementById('tripPurpose').value="";
+    document.getElementById('tripBudget').value="";
+    renderTrips(); updateProgress();
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='progress_backup.json'; a.click(); URL.revokeObjectURL(a.href);
+  });
+  document.getElementById('importBtn').addEventListener('click', ()=>document.getElementById('importInput').click());
+  document.getElementById('importInput').addEventListener('change', e=>{
+    const file=e.target.files[0]; if(!file)return;
+    const r=new FileReader();
+    r.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);
+        if(!data.goals||!data.trips) throw new Error();
+        state.goals=data.goals; state.trips=data.trips; saveState(); renderAll(); alert("読み込み完了");
+      }catch(_){ alert("読み込みに失敗しました"); }
+    };
+    r.readAsText(file,'utf-8');
+  });
+
+  document.getElementById('markAll').addEventListener('click', ()=>{
+    if(confirm("すべて未完に戻しますか？")){
+      state.goals.forEach(g=>g.done=false); state.trips.forEach(t=>t.done=false);
+      saveState(); renderAll();
+    }
+  });
+
+  document.getElementById('shareText').addEventListener('click', async ()=>{
+    const goalsDone=state.goals.filter(g=>g.done).length, goalsTotal=state.goals.length;
+    const tripsDone=state.trips.filter(t=>t.done).length, tripsTotal=state.trips.length;
+    const pct=document.getElementById('progressPct').textContent;
+    const text=`進捗率: ${pct}%\n目標: ${goalsDone}/${goalsTotal} 完了\n旅行: ${tripsDone}/${tripsTotal} 完了`;
+    try{
+      if(navigator.share){ await navigator.share({text}); }
+      else{ await navigator.clipboard.writeText(text); alert("進捗をクリップボードにコピーしました"); }
+    }catch(e){}
+  });
+
+  function renderAll(){ renderGoals(currentFilter); renderTrips(); updateProgress(); }
+  document.addEventListener('DOMContentLoaded', renderAll); renderAll();
+})();
+</script>
+</body>
+</html>
